@@ -1,0 +1,1 @@
+# hospital_rec_opensearch_pipline

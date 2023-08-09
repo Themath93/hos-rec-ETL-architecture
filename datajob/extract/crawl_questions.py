@@ -1,28 +1,27 @@
 import json
 import requests
-import pandas as pd
 from bs4 import BeautifulSoup
 import time
 import asyncio
 import datetime as dt
 
-items = list()
 # crawl 된 dirID.json으로 crawling 진행
 def crawl_jisik(dirId=int):
     global items
-    
+    dirId = str(dirId)
     base_url = "https://kin.naver.com"
     header= "{'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36'}"
 
     with open("docIds.json",'r') as f:
         js_docIds = json.load(f)
-    mj_docids = list(js_docIds[str(dirId)].values())
+    mj_docids = list(js_docIds[dirId].values())
+
     contents_list=[]
 
     for docid in mj_docids:
 
-        url = f"{base_url}/qna/detail.naver?d1id=7&dirId={str(dirId)}&docId={docid}"
-        res = requests.get(url,headers=header)
+        url = f"{base_url}/qna/detail.naver?d1id=7&dirId={dirId}&docId={docid}"
+        res = requests.get(url)
         bs = BeautifulSoup(res.text, 'html.parser')
 
         # 지식인 제목
@@ -37,14 +36,18 @@ def crawl_jisik(dirId=int):
         # 의사답변 내용
         bs_ans = bs.find("div",{"class":"se-module se-module-text"})
         ans = '' if bs_ans == None else bs_ans.text
+
         tmp_json = {
-            "dirId": str(dirId),
+            "dirId": dirId,
             "url": url,
             "title":title_text,
             "qus_content": qus_content,
             "answer":ans
         }
-        contents_list.append(tmp_json)     
+        contents_list.append(tmp_json)
+
+        # 너무 빠른 요청으로 인한 429 Error 로 타임슬립
+        time.sleep(1)
 
     items += contents_list
 
@@ -81,4 +84,4 @@ fin_data = {
 
 with open('crawling_data.json', 'w', encoding='utf-8') as make_file:
 
-    json.dump(fin_data, make_file, indent="\t")
+    json.dump(fin_data, make_file, indent="\t",ensure_ascii=False)

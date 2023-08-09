@@ -1,4 +1,3 @@
-import json
 import requests
 import pandas as pd
 from bs4 import BeautifulSoup
@@ -28,7 +27,8 @@ async def get_list_doc_ids(major_code=str):
         get_docid(major_code,9),
         get_docid(major_code,10)
     )
-    
+
+
 # 각 과별로 url df 만들기.
 df = pd.read_csv("major_list.csv",encoding="utf-8",index_col=0)
 mj_codes=list(map(str,list(df['0'])))

@@ -95,5 +95,12 @@ ENV/
 # mkdocs documentation
 /site
 
+# cralwed data
+/data
+
 # mypy
 .mypy_cache/
+
+# specific JSON files
+crawling_data.json
+docIds.json

@@ -5,6 +5,10 @@ import time
 import asyncio
 import datetime as dt
 
+today=str(dt.datetime.today().date())
+
+docIds_file_loc = f"../../data/docIds_{today}.json"
+
 # crawl 된 dirID.json으로 crawling 진행
 def crawl_jisik(dirId=int):
     global items
@@ -12,7 +16,7 @@ def crawl_jisik(dirId=int):
     base_url = "https://kin.naver.com"
     header= "{'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36'}"
 
-    with open("docIds.json",'r') as f:
+    with open(docIds_file_loc,'r') as f:
         js_docIds = json.load(f)
     mj_docids = list(js_docIds[dirId].values())
 
@@ -69,19 +73,15 @@ async def run_crawl_func():
     )
 
 items = []
-start = time.time()
 asyncio.run(run_crawl_func())
-end= time.time()
-async_time=end-start
-print("비동기화 함수 처리시간 :",async_time)
 
-today=str(dt.datetime.today().date())
 fin_data = {
     "description":"네이버 지식iN에서 건강상담중 7개 관련하여 전문가가 답변한 글만 크롤링",
     "crawling_date" : today,
     "items":items
 }
 
-with open('crawling_data.json', 'w', encoding='utf-8') as make_file:
+
+with open(f'../../data/crawling_data_{today}.json', 'w', encoding='utf-8') as make_file:
 
     json.dump(fin_data, make_file, indent="\t",ensure_ascii=False)

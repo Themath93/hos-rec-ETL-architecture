@@ -29,9 +29,12 @@ async def get_list_doc_ids(major_code=str):
         get_docid(major_code,10)
     )
 
+local_loc ="../../data/"
+container_loc = "/home/worker/python_crawling/app/data/"
+
 today=str(dt.datetime.today().date())
 # 각 과별로 url df 만들기.
-df = pd.read_csv("../../data/major_list.csv",encoding="utf-8",index_col=0)
+df = pd.read_csv(container_loc+"major_list.csv",encoding="utf-8",index_col=0)
 mj_codes=list(map(str,list(df['0'])))
 tmp_list = []
 for code in mj_codes:
@@ -41,4 +44,4 @@ res_json = dict()
 for i in range(0,7):
     res_json[mj_codes[i]] = sum(tmp_list[i*10:(i+1)*10],[])
 df_json = pd.DataFrame(res_json)
-df_json.to_json(f"../../data/docIds_{today}.json")
+df_json.to_json(f"{container_loc}docIds_{today}.json")

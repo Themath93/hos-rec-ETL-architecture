@@ -48,14 +48,14 @@ with DAG(
     # t1, t2 and t3 are examples of tasks created by instantiating operators
     # [START basic_task]
     t1 = BashOperator(
-        task_id="print_date",
-        bash_command="date",
+        task_id="crawl_naverDocIds",
+        bash_command="ssh hosapp ~/volume/crawl_trigger.sh naverDocid",
     )
 
     t2 = BashOperator(
-        task_id="sleep",
+        task_id="crawl_naverQuestions",
         depends_on_past=False,
-        bash_command="sleep 5",
+        bash_command="ssh hosapp ~/volume/crawl_trigger.sh crawlQuestion",
         retries=3,
     )
     # [END basic_task]
@@ -88,11 +88,6 @@ with DAG(
     """
     )
 
-    t3 = BashOperator(
-        task_id="templated",
-        depends_on_past=False,
-        bash_command=templated_command,
-    )
     # [END jinja_template]
 
-    t1 >> [t2, t3]
+    t1 >> t2

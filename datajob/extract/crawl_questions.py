@@ -6,8 +6,11 @@ import asyncio
 import datetime as dt
 
 today=str(dt.datetime.today().date())
+local_loc ="../../data/"
+container_loc = "/home/worker/python_crawling/app/data/"
 
-docIds_file_loc = f"../../data/docIds_{today}.json"
+
+docIds_file_loc = f"{container_loc}docIds_{today}.json"
 
 # crawl 된 dirID.json으로 crawling 진행
 def crawl_jisik(dirId=int):
@@ -82,6 +85,6 @@ fin_data = {
 }
 
 
-with open(f'../../data/crawling_data_{today}.json', 'w', encoding='utf-8') as make_file:
+with open(f'{container_loc}crawling_data_{today}.json', 'w', encoding='utf-8') as make_file:
 
     json.dump(fin_data, make_file, indent="\t",ensure_ascii=False)

@@ -49,13 +49,13 @@ with DAG(
     # [START basic_task]
     t1 = BashOperator(
         task_id="crawl_naverDocIds",
-        bash_command="ssh hosapp ~/volume/crawl_trigger.sh naverDocid",
+        bash_command="ssh hosapp ~/volume/bin/crawl_trigger.sh naverDocid",
     )
 
     t2 = BashOperator(
         task_id="crawl_naverQuestions",
         depends_on_past=False,
-        bash_command="ssh hosapp ~/volume/crawl_trigger.sh crawlQuestion",
+        bash_command="ssh hosapp ~/volume/bin/crawl_trigger.sh crawlQuestion",
         retries=3,
     )
     # [END basic_task]

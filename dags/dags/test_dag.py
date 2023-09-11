@@ -43,23 +43,61 @@ with DAG(
     catchup=False,
     tags=["crwaling"],
 ) as dag:
-    # [END instantiate_dag]
-
-    # t1, t2 and t3 are examples of tasks created by instantiating operators
-    # [START basic_task]
     t1 = BashOperator(
         task_id="crawl_naverDocIds",
         bash_command="ssh hosapp ~/volume/bin/crawl_trigger.sh naverDocid",
     )
 
     t2 = BashOperator(
-        task_id="crawl_naverQuestions",
+        task_id="crawl_70101",
         depends_on_past=False,
-        bash_command="ssh hosapp ~/volume/bin/crawl_trigger.sh crawlQuestion",
+        bash_command="ssh hosapp ~/volume/bin/crawl_trigger.sh crawlQuestion 70101",
         retries=3,
     )
-    # [END basic_task]
+    
+    t3 = BashOperator(
+        task_id="crawl_70102",
+        depends_on_past=False,
+        bash_command="ssh hosapp ~/volume/bin/crawl_trigger.sh crawlQuestion 70102",
+        retries=3,
+    )
 
+    t4 = BashOperator(
+        task_id="crawl_70106",
+        depends_on_past=False,
+        bash_command="ssh hosapp ~/volume/bin/crawl_trigger.sh crawlQuestion 70106",
+        retries=3,
+    )
+
+    t5 = BashOperator(
+        task_id="crawl_70111",
+        depends_on_past=False,
+        bash_command="ssh hosapp ~/volume/bin/crawl_trigger.sh crawlQuestion 70111",
+        retries=3,
+    )
+    
+    t6 = BashOperator(
+        task_id="crawl_70112",
+        depends_on_past=False,
+        bash_command="ssh hosapp ~/volume/bin/crawl_trigger.sh crawlQuestion 70112",
+        retries=3,
+    )
+
+    t7 = BashOperator(
+        task_id="crawl_70113",
+        depends_on_past=False,
+        bash_command="ssh hosapp ~/volume/bin/crawl_trigger.sh crawlQuestion 70113",
+        retries=3,
+    )
+
+    t8 = BashOperator(
+        task_id="crawl_70114",
+        depends_on_past=False,
+        bash_command="ssh hosapp ~/volume/bin/crawl_trigger.sh crawlQuestion 70114",
+        retries=3,
+    )   
+    
+    
     # [START documentation]
     t1.doc_md = dedent(
         """\
@@ -90,4 +128,8 @@ with DAG(
 
     # [END jinja_template]
 
-    t1 >> t2
+    # 
+    # t1 >> [t2, t3, t4, t5, t6, t7, t8]
+    
+    # test run
+    t1 >> [t2, t3, t7, t8]

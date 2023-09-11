@@ -97,6 +97,12 @@ with DAG(
         retries=3,
     )   
     
+    t9 = BashOperator(
+        task_id="Gather_all_Crawled_json_file",
+        depends_on_past=False,
+        bash_command="ssh hosapp ~/volume/bin/crawl_trigger.sh Gathering",
+        retries=3,
+    )
     
     # [START documentation]
     t1.doc_md = dedent(
@@ -129,7 +135,7 @@ with DAG(
     # [END jinja_template]
 
     # 
-    # t1 >> [t2, t3, t4, t5, t6, t7, t8]
+    t1 >> [t2, t3, t4, t5, t6, t7, t8] >> t9
     
     # test run
-    t1 >> [t2, t3, t7, t8]
+    # t1 >> [t2, t3, t7, t8]

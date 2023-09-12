@@ -6,8 +6,6 @@ today=str(dt.datetime.today().date())
 container_loc = "/home/worker/python_crawling/app/data/"
 doc_id_list=["70101","70102","70106","70111","70112","70113","70114"]
 
-today = "2023-09-11"
-
 datas = {}
 
 for id in doc_id_list:
@@ -26,3 +24,6 @@ result = {
 with open(f'{container_loc}subjective_questions_{today}.json', 'w', encoding='utf-8') as make_file:
 
     json.dump(result, make_file, indent="\t",ensure_ascii=False)
+    
+from hdfs import InsecureClient
+client = InsecureClient('http://namenode:9870', user='worker')

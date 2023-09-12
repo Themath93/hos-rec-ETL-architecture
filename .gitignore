@@ -97,6 +97,7 @@ ENV/
 
 # cralwed data
 /data
+/dags/crawl-data
 
 # mypy
 .mypy_cache/

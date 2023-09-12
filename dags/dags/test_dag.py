@@ -104,6 +104,13 @@ with DAG(
         retries=3,
     )
     
+    t10 = BashOperator(
+        task_id="save_file_to_hdfs",
+        depends_on_past=False,
+        bash_command="ssh hosapp ~/volume/bin/crawl_trigger.sh Save",
+        retries=3,
+    )
+    
     # [START documentation]
     t1.doc_md = dedent(
         """\
@@ -135,7 +142,7 @@ with DAG(
     # [END jinja_template]
 
     # 
-    t1 >> [t2, t3, t4, t5, t6, t7, t8] >> t9
+    t1 >> [t2, t3, t4, t5, t6, t7, t8] >> t9 >> t10
     
     # test run
     # t1 >> [t2, t3, t7, t8]

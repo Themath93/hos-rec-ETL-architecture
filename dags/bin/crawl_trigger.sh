@@ -16,4 +16,6 @@ elif [ $1 == "Save" ]; then
 	echo "write_file_to_hdfs"
 	ssh namenode /home/worker/hadoop/bin/hdfs dfs -put /home/worker/volume/crawl-data/subjective_questions* /data/naver_crawl
 	sudo rm /home/worker/volume/crawl-data/subjective_questions*
+elif [ $1 == "Transform" ]; then
+	python3 /home/worker/python_crawling/app/datajob/transform/transform.py
 fi

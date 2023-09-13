@@ -111,6 +111,14 @@ with DAG(
         retries=3,
     )
     
+    t11 = BashOperator(
+        task_id="data_processing_and_load_to_OpenSearch",
+        depends_on_past=False,
+        bash_command="ssh hosapp ~/volume/bin/crawl_trigger.sh Transform",
+        retries=3,
+   
+    )
+    
     # [START documentation]
     t1.doc_md = dedent(
         """\
@@ -142,7 +150,7 @@ with DAG(
     # [END jinja_template]
 
     # 
-    t1 >> [t2, t3, t4, t5, t6, t7, t8] >> t9 >> t10
+    t1 >> [t2, t3, t4, t5, t6, t7, t8] >> t9 >> t10 >> t11
     
     # test run
     # t1 >> [t2, t3, t7, t8]

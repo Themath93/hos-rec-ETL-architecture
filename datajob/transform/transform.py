@@ -3,16 +3,22 @@ import json
 from konlpy.tag import Okt
 import asyncio
 import os
-# import nltk
-# from nltk.corpus import stopwords
-# from nltk.tokenize import word_tokenize
-# from collections import Counter
+import datetime as dt
+from opensearchpy import OpenSearch
+from opensearchpy.helpers import bulk
+from hdfs import InsecureClient
+
 class Transform:
+    today=str(dt.datetime.today().date())
+    hdfs_path = "/data/naver_crawl/"
+    data_path = "/home/worker/python_crawling/app/data/"
+    
+    hdfs_client = InsecureClient('http://namenode:9870', user='worker')
     # 크롤링한 json 파일 불러오기
-    with open("../../data/subjective_questions_2023-09-11.json","r") as f :
+    with hdfs_client.read(f"{hdfs_path}subjective_questions_{today}.json") as f :
         json_file = json.load(f)
     # 불용어 리스트 불러오기
-    with open("../../data/stopword.txt","r") as f:
+    with open(f"{data_path}stopword.txt","r") as f:
         str_stopword= f.read().replace("\n"," ")
         
     docids=list(json_file['data'])
@@ -34,9 +40,29 @@ class Transform:
         loop.run_until_complete(cors)
         loop.close()
 
-        print(self.result_dict)
-        # for id in docids:
-        #     tmp_dict = {id:dict(Counter(result_dict[id]))}
+
+        # Bulk API To OpenSearch Data 전처리
+        tmp_json=json.dumps(self.result_dict,ensure_ascii=False)
+        docids = ['70101', '70102', '70106', '70111', '70112', '70113', '70114']
+        dict_json = json.loads(tmp_json)
+        index_name = "test1"
+        index_dict = { "index" : { "_index" : index_name } }
+        index_json = json.dumps(index_dict,ensure_ascii=False)
+        result = []
+        for id in docids:
+            tmp_dict = json.dumps({"major":id,"words":dict_json[id]},ensure_ascii=False)
+            result.append(index_json)
+            result.append(tmp_dict)
+        
+        bulk_data = " \n ".join(result)
+        
+        Transform.__to_opensearch(self,bulk_data)
+    
+
+    def __to_opensearch(self,bulk_data=str):
+        hosts=[{"host":"oscoordinator","port":9200}]
+        os_client = OpenSearch(hosts=hosts)
+        os_client.bulk(bulk_data)
     
     async def __okt_konlpy(self,docId=str):
         # 각과 데이터
@@ -64,5 +90,3 @@ class Transform:
         
         # 결과물 result_dict 에 저장
         self.result_dict[docId] = self.result_dict[docId] + list(set(result))
-
-Transform.transform()

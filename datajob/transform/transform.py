@@ -7,6 +7,8 @@ import datetime as dt
 from opensearchpy import OpenSearch
 from opensearchpy.helpers import bulk
 from hdfs import InsecureClient
+import time
+import requests
 
 class Transform:
     today=str(dt.datetime.today().date())
@@ -60,9 +62,38 @@ class Transform:
     
 
     def __to_opensearch(self,bulk_data=str):
-        hosts=[{"host":"oscoordinator","port":9200}]
+        
+        ## Bulk API 적재전 Rollover API 전송
+        Transform.__rollover_index(self)
+        
+        hosts=[{"host":"osingest","port":9200}]
         os_client = OpenSearch(hosts=hosts)
         os_client.bulk(bulk_data)
+
+    def __rollover_index(self):
+        
+        # POST API CURL TO OPENSEARCH
+        headers = {
+            "Content-Type": "application/json",
+        }
+
+        params = {
+            "pretty": "true",
+        }
+
+        data = '{\"conditions\":{\"max_age\":\"1d\",\"max_docs\":7}}'
+
+        res = requests.post('http://localhost:9203/alias1/_rollover', params=params, headers=headers, data=data)
+        res_json = json.loads(res.text.replace("\n",""))
+        
+        # bool
+        is_rollover = res_json["acknowledged"]
+        # rollover 된경우 index 생성시간을 기다려준다.
+        if is_rollover : 
+            os.system(f'echo "alias1 is rollovered \n New index name : {res_json["new_index"]}" \n Waiting New index')
+            for i in range(1,20):
+                os.system(f"echo {str(i)}")
+                time.sleep(1)
     
     async def __okt_konlpy(self,docId=str):
         # 각과 데이터
@@ -90,3 +121,5 @@ class Transform:
         
         # 결과물 result_dict 에 저장
         self.result_dict[docId] = self.result_dict[docId] + list(set(result))
+        
+Transform.transform()

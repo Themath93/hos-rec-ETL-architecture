@@ -1,20 +1,45 @@
-#!/usr/bin/env python3
-"""
-Module Docstring
-"""
+import os
+import sys
 
-__author__ = "Your Name"
-__version__ = "0.1.0"
-__license__ = "MIT"
+from datajob.extract.crawl_docIds import DocIdExtractor
+from datajob.extract.crawl_questions import QuestionExtractor
+from datajob.transform.transform import QuestionTransformer
+from datajob.extract import reducer
 
-from logzero import logger
-
+def test() :
+    print("called")
 
 def main():
     """ Main entry point of the app """
-    logger.info("hello world")
+    works = {
+        "extract":{
+            "doc_ids": DocIdExtractor.extract,
+            "quetions": QuestionExtractor.extract,
+            "reducer": reducer.reducer
+        },
+        "transform":{
+            "questions":QuestionTransformer.transform
+        }
+        
+    }
 
+    return works
+works = main()
 
 if __name__ == "__main__":
     """ This is executed when run from the command line """
-    main()
+    args = sys.argv
+    
+    if args[1] not in works.keys() :
+        raise Exception("첫번째 전달인자가 이상함 >> " +str(works.keys()))
+    if args[2] not in works[args[1]].keys() :
+        raise Exception("두번째 전달인자가 이상함 >> " +str(works[args[1]].keys()))
+    
+    print(len(args))
+
+    if len(args) == 2 or args[2] == "reducer" :
+        work = works[args[1]][args[2]]
+        work()
+    else :
+        work = works[args[1]][args[2]]
+        work(int(args[3]))

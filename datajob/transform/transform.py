@@ -10,20 +10,28 @@ from hdfs import InsecureClient
 import time
 import requests
 
-class Transform:
+class QuestionTransformer:
+    
     today=str(dt.datetime.today().date())
     hdfs_path = "/data/naver_crawl/"
     data_path = "/home/worker/python_crawling/app/data/"
     
+    
+
     hdfs_client = InsecureClient('http://namenode:9870', user='worker')
-    # 크롤링한 json 파일 불러오기
-    with hdfs_client.read(f"{hdfs_path}subjective_questions_{today}.json") as f :
-        json_file = json.load(f)
+    # # 크롤링한 json 파일 불러오기
+
     # 불용어 리스트 불러오기
     with open(f"{data_path}stopword.txt","r") as f:
         str_stopword= f.read().replace("\n"," ")
-        
-    docids=list(json_file['data'])
+    
+
+    try:
+        yesterday = dt.date.today() - dt.timedelta(days=1)
+        yesterday = str(yesterday.date())
+        with hdfs_client.read(f"{hdfs_path}subjective_questions_{yesterday}.json") as f :
+            docids = list(json.load(f)['data'])
+    except: docids=['70101', '70102', '70106', '70113', '70111', '70112', '70114']
     empty_list = [[]]*len(docids)
     result_dict = dict(zip(docids,empty_list))
     okt = Okt()
@@ -32,22 +40,20 @@ class Transform:
     
     @classmethod
     def transform(self):
-        os.system('echo "Transform is working"')
-            # asnyc tasks
-        tasks = [Transform.__okt_konlpy(self,id) for id in self.docids]
-
-        loop = asyncio.get_event_loop()
-        # 비동기 tasks ready
-        cors = asyncio.wait(tasks)
-        loop.run_until_complete(cors)
-        loop.close()
-
-
+        os.system('echo "QuestionTransformer is working"')
+        # asnyc tasks
+        self.__async_transforming()
         # Bulk API To OpenSearch Data 전처리
+        bulk_data = self.__create_Bulk_API_data()
+        # 
+        QuestionTransformer.__to_opensearch(self,bulk_data)
+
+    @classmethod
+    def __create_Bulk_API_data(self):
         tmp_json=json.dumps(self.result_dict,ensure_ascii=False)
         docids = ['70101', '70102', '70106', '70111', '70112', '70113', '70114']
         dict_json = json.loads(tmp_json)
-        index_name = "test1"
+        index_name = "alias1"
         index_dict = { "index" : { "_index" : index_name } }
         index_json = json.dumps(index_dict,ensure_ascii=False)
         result = []
@@ -57,14 +63,23 @@ class Transform:
             result.append(tmp_dict)
         
         bulk_data = " \n ".join(result)
-        
-        Transform.__to_opensearch(self,bulk_data)
+        return bulk_data
+
+    @classmethod
+    def __async_transforming(self):
+        tasks = [QuestionTransformer.__okt_konlpy(self,id) for id in self.docids]
+
+        loop = asyncio.get_event_loop()
+        # 비동기 tasks ready
+        cors = asyncio.wait(tasks)
+        loop.run_until_complete(cors)
+        loop.close()
     
 
     def __to_opensearch(self,bulk_data=str):
         
         ## Bulk API 적재전 Rollover API 전송
-        Transform.__rollover_index(self)
+        QuestionTransformer.__rollover_index(self)
         
         hosts=[{"host":"osingest","port":9200}]
         os_client = OpenSearch(hosts=hosts)
@@ -73,6 +88,22 @@ class Transform:
     def __rollover_index(self):
         
         # POST API CURL TO OPENSEARCH
+        res_json = self.__execute_rollover_API()
+        
+        # bool
+        is_rollover = res_json["acknowledged"]
+        
+        # rollover 된경우 index 생성시간을 기다려준다.
+        self.__waiting_until_new_index_created(res_json, is_rollover)
+
+    def __waiting_until_new_index_created(self, res_json, is_rollover):
+        if is_rollover : 
+            os.system(f'echo "alias1 is rollovered \n New index name : {res_json["new_index"]}" \n Waiting New index')
+            for i in range(1,20):
+                os.system(f"echo {str(i)}")
+                time.sleep(1)
+
+    def __execute_rollover_API(self):
         headers = {
             "Content-Type": "application/json",
         }
@@ -83,21 +114,15 @@ class Transform:
 
         data = '{\"conditions\":{\"max_age\":\"1d\",\"max_docs\":7}}'
 
-        res = requests.post('http://localhost:9203/alias1/_rollover', params=params, headers=headers, data=data)
+        res = requests.post('http://osingest:9200/alias1/_rollover', params=params, headers=headers, data=data)
         res_json = json.loads(res.text.replace("\n",""))
-        
-        # bool
-        is_rollover = res_json["acknowledged"]
-        # rollover 된경우 index 생성시간을 기다려준다.
-        if is_rollover : 
-            os.system(f'echo "alias1 is rollovered \n New index name : {res_json["new_index"]}" \n Waiting New index')
-            for i in range(1,20):
-                os.system(f"echo {str(i)}")
-                time.sleep(1)
+        return res_json
     
     async def __okt_konlpy(self,docId=str):
+        with self.hdfs_client.read(f"{self.hdfs_path}subjective_questions_{self.today}.json") as f :
+            json_file = json.load(f)
         # 각과 데이터
-        each_major_data = self.json_file['data'][docId]
+        each_major_data = json_file['data'][docId]
 
         # 텍스트 어절 추출
         filter_list = [ "Noun", "Adjective", "Verb" ]
@@ -121,5 +146,3 @@ class Transform:
         
         # 결과물 result_dict 에 저장
         self.result_dict[docId] = self.result_dict[docId] + list(set(result))
-        
-Transform.transform()

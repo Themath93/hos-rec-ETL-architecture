@@ -21,7 +21,7 @@ class DocIdExtractor:
     @classmethod
     def extract(self,page_num=10):
         os.system('echo "DocId extract begin"')
-        os.system(f'echo "Total Question : {int(page_num)*20*7}ea"')
+        
         loop = asyncio.get_event_loop()
         for id in self.mj_codes:
             tasks = DocIdExtractor.get_tasks(page_num,id)

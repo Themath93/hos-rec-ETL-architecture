@@ -45,7 +45,8 @@ with DAG(
 ) as dag:
     t1 = BashOperator(
         task_id="crawl_naverDocIds",
-        bash_command="ssh hosapp ~/volume/bin/crawl_trigger.sh naverDocid",
+        bash_command="ssh hosapp ~/volume/bin/crawl_trigger.sh naverDocid 10",
+        # Second argument is about quantity of each major's quetion. But real quantity is "2nd_arg * 10". So 10 is meaning 200ea 
     )
 
     t2 = BashOperator(

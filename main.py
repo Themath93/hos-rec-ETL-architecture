@@ -36,8 +36,8 @@ if __name__ == "__main__":
         raise Exception("두번째 전달인자가 이상함 >> " +str(works[args[1]].keys()))
     
     print(len(args))
-
-    if len(args) == 2 or args[2] == "reducer" :
+    
+    if len(args) == 3 :
         work = works[args[1]][args[2]]
         work()
     else :

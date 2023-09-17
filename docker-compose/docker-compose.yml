@@ -1,0 +1,401 @@
+##################################################################
+################ Only works in ARM64 Environment #################
+########### Hospital Data ETL Cluster Docker-compose #############
+##################################################################
+######################################## Ver 1.0 #################
+####################       https://github.com/Themath93    #######
+##################################################################
+##################################################################
+# Hospital Data ETL Cluster Docker-compose 
+
+# Cluster_Master
+# Python venv - 1 (Crawling Naver API & jisikin data asynchronously)
+
+# REST-API
+# Django RESTframework - 1
+# - with Nginx, gunicorn webserver
+
+# EFK System - (Datawarehouse & DataMart & Log storage & Log monitoring)
+# Cluster Mananger Node - 1
+# Coordinator Node - 1
+# Data & Ingest & manager stanby Node - 2
+# OpenDashboard -1
+
+# Hadoop System - as Datalake
+# Namenode & Yarn(RM) - 1 (For this small system we don't need HA ZK & JNode architecture at this time.)
+# Datanode - 2 (2 Replica)
+
+# Airflow System - as Batch
+# Scheduler & Webserver & Flower - 1 
+# Worker - 2 
+# Mysql - 1 (Airflow DB & Django DB)
+# Redis - 1 (Celery Broker)
+
+# Prometheus & Grafana - as Observer
+# Prometheus - 1 (Collect metircs )
+# Grafana - 1 (Visualize & Alert )
+
+# Node_exporter has installed each node
+# Airflow node has StatsD_exporter in addition
+# Mysql node has mysql_exporter in addition
+
+# All Logs in each node will be update daily with logrotate in Ubuntu
+# and All log will be pushed by FluentD to OpenSearch Node
+
+#################################################################
+version: '3.8'
+x-extra_hosts:
+  &default-extra_hosts
+  - "scheduler:172.22.0.2"
+  - "worker1:172.22.0.3"
+  - "worker2:172.22.0.4"
+  - "namenode:172.22.0.5"
+  - "hdatanode1:172.22.0.6"
+  - "hdatanode2:172.22.0.7"
+  - "mysql:172.22.0.10"
+  - "redis:172.22.0.11"
+  - "observer:172.22.0.12"
+  - "osmanager:172.22.0.13"
+  - "osdatanode1:172.22.0.14"
+  - "osdatanode2:172.22.0.15"
+  - "osingest:172.22.0.16"
+  - "oscoordinator:172.22.0.17"
+  - "osdashboard:172.22.0.18"
+  - "hosapp:172.22.0.19"
+  - "restapi:172.22.0.20"
+
+services:
+# Airflow ##
+  scheduler:
+    container_name: scheduler
+    privileged: true
+    restart: always
+    hostname: scheduler
+    image: yoonthemath/airflow_scheduler:1.0
+    volumes:
+      - myvolume:/home/worker/volume
+    networks:
+      hos_cluster:
+        ipv4_address: 172.22.0.2
+    extra_hosts: *default-extra_hosts
+    ports:
+      - "8080:8080"
+      - "9401:9100"
+      - "9102:9102"
+      - "5555:5555"
+      - "8125:8125"
+    command: /sbin/init
+
+  worker1:
+    container_name: worker1
+    privileged: true
+    restart: always
+    hostname: worker1
+    image: yoonthemath/airflow_worker_1:1.0
+    volumes:
+      - myvolume:/home/worker/volume
+    networks:
+      hos_cluster:
+        ipv4_address: 172.22.0.3
+    extra_hosts: *default-extra_hosts
+    ports:
+      - "8081:8080"
+      - "9402:9100"
+    command: /sbin/init
+
+  worker2:
+    container_name: worker2
+    privileged: true
+    restart: always
+    hostname: worker2
+    image: yoonthemath/airflow_worker_2:1.0
+    volumes:
+      - myvolume:/home/worker/volume
+    networks:
+      hos_cluster:
+        ipv4_address: 172.22.0.4
+    extra_hosts: *default-extra_hosts
+    ports:
+      - "8082:8080"
+      - "9403:9100"
+    command: /sbin/init
+
+  mysql:
+    container_name: mysql
+    privileged: true
+    restart: always
+    hostname: mysql
+    image: yoonthemath/mysql:1.0
+    volumes:
+      - myvolume:/home/worker/volume
+    networks:
+      hos_cluster:
+        ipv4_address: 172.22.0.10
+    extra_hosts: *default-extra_hosts
+    ports:
+      - "3307:3306"
+      - "9404:9100"
+    command: /sbin/init
+
+  redis:
+    container_name: redis
+    privileged: true
+    restart: always
+    hostname: redis
+    image: yoonthemath/redis:1.1
+    volumes:
+      - myvolume:/home/worker/volume
+    networks:
+      hos_cluster:
+        ipv4_address: 172.22.0.11
+    extra_hosts: *default-extra_hosts
+    ports:
+      - "6379:6379"
+      - "9405:9100"
+    command: /sbin/init
+
+# Observer ##
+  observer:
+    container_name: observer
+    privileged: true
+    restart: always
+    hostname: observer
+    image: yoonthemath/observer:1.0
+    volumes:
+      - myvolume:/home/worker/volume
+    networks:
+      hos_cluster:
+        ipv4_address: 172.22.0.12
+    extra_hosts: *default-extra_hosts
+    ports:
+      - "3000:3000"
+      - "9090:9090"
+      - "9091:9091"
+      - "9406:9100"
+    command: /sbin/init
+
+# Hadoop ##
+  namenode:
+    container_name: namenode
+    privileged: true
+    restart: always
+    hostname: namenode
+    image: yoonthemath/hadoop_base:1.1
+    volumes:
+      - myvolume:/home/worker/volume
+    networks:
+      hos_cluster:
+        ipv4_address: 172.22.0.5
+    extra_hosts: *default-extra_hosts
+    ports:
+      - "18080:18080"
+      - "9870:9870"
+      - "8088:8088"
+      - "9407:9100"
+    command: /sbin/init
+
+  hdatanode1:
+    container_name: hdatanode1
+    privileged: true
+    restart: always
+    hostname: hdatanode1
+    image: yoonthemath/hadoop_base:1.1
+    volumes:
+      - myvolume:/home/worker/volume
+    networks:
+      hos_cluster:
+        ipv4_address: 172.22.0.6
+    extra_hosts: *default-extra_hosts
+    ports:
+      - "9864:9864"
+      - "9408:9100"
+    command: /sbin/init
+
+  hdatanode2:
+    container_name: hdatanode2
+    privileged: true
+    restart: always
+    hostname: hdatanode2
+    image: yoonthemath/hadoop_base:1.1
+    volumes:
+      - myvolume:/home/worker/volume
+    networks:
+      hos_cluster:
+        ipv4_address: 172.22.0.7
+    extra_hosts: *default-extra_hosts
+    ports:
+      - "9865:9864"
+      - "9409:9100"
+    command: /sbin/init
+
+# Elasitcsearch, Kibana
+  osmanager:
+    container_name: osmanager
+    privileged: true
+    restart: always
+    hostname: osmanager
+    image: yoonthemath/opensearch_base:1.1
+    volumes:
+      - myvolume:/home/worker/volume
+    networks:
+      hos_cluster:
+        ipv4_address: 172.22.0.13
+    extra_hosts: *default-extra_hosts
+    ports:
+      - "9200:9200"
+      - "9500:9300"
+      - "9250:9250"
+      - "9600:9600"
+      - "9410:9100"
+    command: /sbin/init
+
+  osdatanode1:
+    container_name: osdatanode1
+    privileged: true
+    restart: always
+    hostname: osdatanode1
+    image: yoonthemath/opensearch_base:1.1
+    volumes:
+      - myvolume:/home/worker/volume
+    networks:
+      hos_cluster:
+        ipv4_address: 172.22.0.14
+    extra_hosts: *default-extra_hosts
+    ports:
+      - "9201:9200"
+      - "9501:9300"
+      - "9251:9250"
+      - "9601:9600"
+      - "9411:9100"
+    command: /sbin/init
+
+  osdatanode2:
+    container_name: osdatanode2
+    privileged: true
+    restart: always
+    hostname: osdatanode2
+    image: yoonthemath/opensearch_base:1.1
+    volumes:
+      - myvolume:/home/worker/volume
+    networks:
+      hos_cluster:
+        ipv4_address: 172.22.0.15
+    extra_hosts: *default-extra_hosts
+    ports:
+      - "9202:9200"
+      - "9502:9300"
+      - "9252:9250"
+      - "9602:9600"
+      - "9412:9100"
+    command: /sbin/init    
+  
+  osingest:
+    container_name: osingest
+    privileged: true
+    restart: always
+    hostname: osingest
+    image: yoonthemath/opensearch_base:1.1
+    volumes:
+      - myvolume:/home/worker/volume
+    networks:
+      hos_cluster:
+        ipv4_address: 172.22.0.16
+    extra_hosts: *default-extra_hosts
+    ports:
+      - "9203:9200"
+      - "9503:9300"
+      - "9253:9250"
+      - "9603:9600"
+      - "9413:9100"
+    command: /sbin/init 
+
+  oscoordinator:
+    container_name: oscoordinator
+    privileged: true
+    restart: always
+    hostname: oscoordinator
+    image: yoonthemath/opensearch_base:1.1
+    volumes:
+      - myvolume:/home/worker/volume
+    networks:
+      hos_cluster:
+        ipv4_address: 172.22.0.17
+    extra_hosts: *default-extra_hosts
+    ports:
+      - "9204:9200"
+      - "9504:9300"
+      - "9254:9250"
+      - "9604:9600"
+      - "9414:9100"
+    command: /sbin/init 
+
+  osdashboard:
+    container_name: osdashboard
+    privileged: true
+    restart: always
+    hostname: osdashboard
+    image: yoonthemath/opensearch-dashboards:1.0
+    volumes:
+      - myvolume:/home/worker/volume
+    networks:
+      hos_cluster:
+        ipv4_address: 172.22.0.18
+    extra_hosts: *default-extra_hosts
+    ports:
+      - "5601:5601"
+      - "9415:9100"
+    command: /sbin/init 
+
+## python app
+  hosapp:
+    container_name: hosapp
+    privileged: true
+    restart: always
+    hostname: hosapp
+    image: yoonthemath/hosapp:1.2
+    volumes:
+      - myvolume:/home/worker/volume
+    networks:
+      hos_cluster:
+        ipv4_address: 172.22.0.19
+    extra_hosts: *default-extra_hosts
+    ports:
+      - "9416:9100"
+    command: /sbin/init 
+
+## python app
+  restapi:
+    container_name: restapi
+    privileged: true
+    restart: always
+    hostname: restapi
+    image: yoonthemath/restapi:1.0
+    volumes:
+      - myvolume:/home/worker/volume
+    networks:
+      hos_cluster:
+        ipv4_address: 172.22.0.20
+    extra_hosts: *default-extra_hosts
+    ports:
+      - "9416:9100"
+    command: /sbin/init 
+
+networks:
+  hos_cluster:
+    ipam:
+     config:
+       - subnet: 172.22.0.2/24
+         gateway: 172.22.0.1
+
+# volumes:
+#   hos-app:
+#     external: true
+
+volumes:
+  myvolume:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind 
+      device: /Users/byungwoyoon/Desktop/Projects/hospital_pipline/hospital_rec_opensearch_pipline/dags
+      

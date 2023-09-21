@@ -11,21 +11,14 @@ import time
 import requests
 
 class QuestionTransformer:
-    
     today=str(dt.datetime.today().date())
     hdfs_path = "/data/naver_crawl/"
     data_path = "/home/worker/python_crawling/app/data/"
-    
-    
-
     hdfs_client = InsecureClient('http://namenode:9870', user='worker')
     # # 크롤링한 json 파일 불러오기
-
     # 불용어 리스트 불러오기
     with open(f"{data_path}stopword.txt","r") as f:
         str_stopword= f.read().replace("\n"," ")
-    
-
     try:
         yesterday = dt.date.today() - dt.timedelta(days=1)
         yesterday = str(yesterday.date())
@@ -35,9 +28,6 @@ class QuestionTransformer:
     empty_list = [[]]*len(docids)
     result_dict = dict(zip(docids,empty_list))
     okt = Okt()
-    
-    
-    
     @classmethod
     def transform(self):
         os.system('echo "QuestionTransformer is working"')
@@ -75,7 +65,6 @@ class QuestionTransformer:
         loop.run_until_complete(cors)
         loop.close()
     
-
     def __to_opensearch(self,bulk_data=str):
         
         ## Bulk API 적재전 Rollover API 전송

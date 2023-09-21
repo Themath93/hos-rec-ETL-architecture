@@ -1,4 +1,5 @@
 from kafka import KafkaProducer
+from kafka import KafkaConsumer
 import json
 
 
@@ -26,17 +27,17 @@ class MessageProducer:
         except Exception as exc:
             print("exception")
             raise exc
-                
 
-
-# # 브로커와 토픽명을 지정한다.
-# broker = ["localhost:19092","localhost:19093","localhost:19094"]
-# # broker = ["localhost:9092"]
-# topic = "test1"
-# pd = MessageProducer(broker, topic)
-# print(pd.producer.bootstrap_connected())
-# # print(pd.producer.)
-# msg = {"name": "John", "age": 30}
-# # msg = b'this is message'
-# res = pd.send_message(msg)
-# print(res)
+class Consumer:
+    def __init__(self, broker, topic, group_id):
+        self.broker = broker
+        self.topic = topic
+        self.group_id = group_id
+        self.consumer = KafkaConsumer(
+            self.topic,
+            bootstrap_servers=self.broker,
+            group_id=self.group_id,
+            auto_offset_reset='earliest',
+            enable_auto_commit=True,
+            consumer_timeout_ms=1000,
+        )

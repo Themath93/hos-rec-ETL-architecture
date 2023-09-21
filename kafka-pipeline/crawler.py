@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 import datetime as dt
 import time
 import os,json
-import producer
+import get_kafka
 
 
 def crawler(dir_id,sleep_second=3600):
@@ -21,6 +21,7 @@ def crawler(dir_id,sleep_second=3600):
         trs = bs.find('tbody',{'id':'au_board_list'}).findAll("tr")
         for tr in trs:
             content_num = tr.find("a")['href'].split("&")[-1].split("=")[1]
+            print(content_num == last_point)
             if content_num != last_point:
                 content_num_list.append(content_num)
             else :
@@ -44,8 +45,6 @@ def save_last_point(content_num_list, docids_loc):
 def extract(dir_id,content_num_list):
     headers = {"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Safari/537.36"}
     base_url = "https://kin.naver.com"
-    
-    content_num_list
 
     for doc_id in content_num_list:
 
@@ -82,7 +81,7 @@ def extract(dir_id,content_num_list):
         
         broker = ["localhost:19092","localhost:19093","localhost:19094"]
         topic = f"question-{dir_id}"
-        producer.MessageProducer(broker=broker,topic=topic).send_message(tmp_json)
+        get_kafka.MessageProducer(broker=broker,topic=topic).send_message(tmp_json)
 
         # 너무 빠른 요청으로 인한 429 Error 로 타임슬립
         os.system(f'echo "STATUS_CODE : {res.status_code}"')

@@ -105,3 +105,6 @@ ENV/
 # specific JSON files
 crawling_data.json
 docIds.json
+
+# Metadata
+.kafka-pipeline/each-save-point
